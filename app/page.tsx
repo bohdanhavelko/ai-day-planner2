@@ -1,94 +1,81 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { addTasks } from '@/lib/storage'
 import { Task } from '@/lib/types'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnySR = any
-
-function makeSR(): AnySR | null {
-  if (typeof window === 'undefined') return null
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-  return SR ? new SR() : null
-}
-
-function isVoiceSupported(): boolean {
-  if (typeof window === 'undefined') return false
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const hasSR = !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition
-  if (!hasSR) return false
-  const ua = navigator.userAgent
-  const isIOS = /iPhone|iPad|iPod/.test(ua)
-  // On iOS only Safari has SpeechRecognition; Chrome/Firefox on iOS do not
-  if (isIOS) return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)
-  return true
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition
+    webkitSpeechRecognition: typeof SpeechRecognition
+  }
 }
 
 export default function CapturePage() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
-  const [recording, setRecording] = useState(false)
-  const [supported, setSupported] = useState(false)
-  const [iosUnsupported, setIosUnsupported] = useState(false)
+  const [isListening, setIsListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const recRef = useRef<AnySR>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    const ua = navigator.userAgent
-    const isIOS = /iPhone|iPad|iPod/.test(ua)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hasSR = !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition
-    if (isIOS && hasSR && !isVoiceSupported()) {
-      setIosUnsupported(true)
-    } else {
-      setSupported(isVoiceSupported())
-    }
-  }, [])
-
-  const handleMic = () => {
-    if (recording) {
-      recRef.current?.stop()
-      setRecording(false)
+  function toggleVoice() {
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
       return
     }
 
-    const recognition = makeSR()
-    if (!recognition) return
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) {
+      alert('Голосовий ввід не підтримується. Використовуй Safari.')
+      return
+    }
 
+    const recognition = new SR()
+    recognition.lang = 'uk-UA'
     recognition.continuous = false
     recognition.interimResults = false
-    recognition.lang = 'uk-UA'
-    recognition.maxAlternatives = 1
+    recognitionRef.current = recognition
 
-    recognition.onresult = (event: AnySR) => {
-      const transcript = event.results[0][0].transcript as string
+    const gotResultRef = { current: false }
+
+    recognition.onstart = () => {
+      gotResultRef.current = false
+      setIsListening(true)
+    }
+
+    recognition.onresult = (e) => {
+      gotResultRef.current = true
+      const transcript = e.results[e.results.length - 1][0].transcript
       setText(prev => (prev ? prev + ' ' + transcript : transcript))
-      setRecording(false)
     }
 
-    recognition.onerror = () => setRecording(false)
-    recognition.onend = () => setRecording(false)
-
-    recRef.current = recognition
-    try {
-      recognition.start()
-      setRecording(true)
-    } catch {
-      recognition.stop()
-      setTimeout(() => {
-        try { recognition.start(); setRecording(true) } catch { setRecording(false) }
-      }, 200)
+    recognition.onend = () => {
+      if (gotResultRef.current) {
+        gotResultRef.current = false
+        try { recognition.start() } catch { setIsListening(false) }
+      } else {
+        setIsListening(false)
+      }
     }
+
+    recognition.onerror = (e) => {
+      if (e.error === 'no-speech') {
+        try { recognition.start() } catch { setIsListening(false) }
+        return
+      }
+      setIsListening(false)
+    }
+
+    recognition.start()
   }
 
   const handleSubmit = async () => {
     const trimmed = text.trim()
     if (!trimmed) return
-    if (recording) { recRef.current?.stop(); setRecording(false) }
+    if (isListening) { recognitionRef.current?.stop(); setIsListening(false) }
 
     setLoading(true)
     setError(null)
@@ -149,25 +136,18 @@ export default function CapturePage() {
       )}
 
       <div className="flex flex-col items-center gap-4">
-        {supported && (
-          <button
-            onClick={handleMic}
-            disabled={loading}
-            aria-label={recording ? 'Зупинити запис' : 'Почати запис'}
-            className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90"
-            style={
-              recording
-                ? { background: '#FF3B30', boxShadow: '0 0 0 8px rgba(255,59,48,0.2)', animation: 'pulse 1.5s infinite' }
-                : { background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }
-            }
-          >
-            🎤
-          </button>
-        )}
-
-        {iosUnsupported && (
-          <p className="text-sm" style={{ color: '#8E8E93' }}>🎤 Голос доступний лише в Safari</p>
-        )}
+        <button
+          onClick={toggleVoice}
+          disabled={loading}
+          aria-label={isListening ? 'Зупинити запис' : 'Почати запис'}
+          className={`p-4 rounded-full transition-all ${
+            isListening
+              ? 'bg-red-500 animate-pulse shadow-lg shadow-red-200'
+              : 'bg-blue-600'
+          }`}
+        >
+          <span className="text-white text-2xl">{isListening ? '⏹' : '🎤'}</span>
+        </button>
 
         <button
           onClick={handleSubmit}
