@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { getTasks, updateTask } from '@/lib/storage'
+import { getTasks, updateTask, saveTasks } from '@/lib/storage'
 import { Task, DayPlan } from '@/lib/types'
 import TaskCheckItem from '@/components/TaskCheckItem'
 
@@ -123,7 +123,7 @@ export default function TodayPage() {
   return (
     <div className="py-10 flex flex-col gap-5">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Today</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Сьогодні</h1>
         <p className="text-sm mt-0.5" style={{ color: '#8E8E93' }}>
           {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
@@ -263,6 +263,20 @@ export default function TodayPage() {
               style={{ background: '#F2F2F7', color: '#8E8E93' }}
             >
               Перенести невиконані в Inbox →
+            </button>
+          )}
+
+          {done.length > 0 && (
+            <button
+              onClick={() => {
+                const remaining = getTasks().filter(t => t.status !== 'done')
+                saveTasks(remaining)
+                setTasks(prev => prev.filter(t => t.status !== 'done'))
+              }}
+              className="w-full py-3 rounded-2xl text-sm font-semibold transition-all active:opacity-70 min-h-[48px]"
+              style={{ background: '#FFF0EF', color: '#FF3B30' }}
+            >
+              Очистити виконані 🗑
             </button>
           )}
         </>

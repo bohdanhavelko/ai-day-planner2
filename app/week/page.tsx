@@ -17,10 +17,11 @@ function dayLabel(dateStr: string): string {
 
 function next7Days(): string[] {
   const days: string[] = []
+  const startDate = new Date()
+  startDate.setHours(0, 0, 0, 0)
   for (let i = 0; i < 7; i++) {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    d.setDate(d.getDate() + i)
+    const d = new Date(startDate)
+    d.setDate(startDate.getDate() + i)
     days.push(d.toISOString().split('T')[0])
   }
   return days
@@ -30,7 +31,7 @@ export default function WeekPage() {
   const [tasks, setTasks] = useState<Task[]>([])
 
   useEffect(() => {
-    setTasks(getTasks())
+    setTasks(getTasks().filter(t => t.status !== 'done'))
   }, [])
 
   const handleToggle = (id: string) => {

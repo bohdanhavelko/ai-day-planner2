@@ -2,6 +2,10 @@
 
 import { Task } from '@/lib/types'
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+}
+
 interface Props {
   task: Task
   onToggle: (id: string) => void
@@ -47,7 +51,7 @@ export default function TaskCheckItem({ task, onToggle }: Props) {
         <p className="text-sm mt-0.5" style={{ color: done ? '#E5E5EA' : '#8E8E93' }}>
           ⏱ {task.estimatedMinutes} хв
           {task.deadline && task.deadline !== new Date().toISOString().split('T')[0] && (
-            <span className="ml-3">📅 {task.deadline}</span>
+            <span className="ml-3">📅 {formatDate(task.deadline)}</span>
           )}
         </p>
       </div>
