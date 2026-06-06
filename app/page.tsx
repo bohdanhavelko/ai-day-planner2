@@ -48,8 +48,18 @@ export default function CapturePage() {
 
     recognition.onresult = (e) => {
       gotResultRef.current = true
-      const transcript = e.results[e.results.length - 1][0].transcript
-      setText(prev => (prev ? prev + ' ' + transcript : transcript))
+      // Safari sometimes returns multiple results — take the last final one
+      let transcript = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          transcript += e.results[i][0].transcript
+        }
+      }
+      console.log('transcript:', transcript)
+      if (transcript.trim()) {
+        // Use functional update to avoid stale closure
+        setText(prev => prev ? prev + ' ' + transcript.trim() : transcript.trim())
+      }
     }
 
     recognition.onend = () => {
