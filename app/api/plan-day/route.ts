@@ -24,7 +24,7 @@ Rules:
 - Group similar tasks together when possible
 - Add 10-minute breaks between tasks over 45 minutes
 - If total time exceeds 8 hours, note it in summary
-- reasoning must be in the same language as task titles
+- All text in your response (summary, tip, reasoning fields) MUST be in Ukrainian only. Never mix languages. Never write in English. Even if task titles are in English, respond entirely in Ukrainian.
 - Return ONLY JSON. No markdown fences. No extra text.`
 
 type InputTask = {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `Today is ${today}. Current time is ${currentTime}.\nMy tasks for today: ${JSON.stringify(tasks)}`,
+          content: `Відповідай виключно українською мовою.\n\nToday is ${today}. Current time is ${currentTime}.\nMy tasks for today: ${JSON.stringify(tasks)}`,
         },
       ],
     })
