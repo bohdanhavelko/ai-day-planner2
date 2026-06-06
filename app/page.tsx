@@ -1,108 +1,94 @@
 'use client'
 
-/// <reference types="@types/dom-speech-recognition" />
-
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { addTasks } from '@/lib/storage'
 import { Task } from '@/lib/types'
 
-type SpeechRecognitionCtor = new () => SpeechRecognition
-type WindowWithSpeech = Window & {
-  SpeechRecognition?: SpeechRecognitionCtor
-  webkitSpeechRecognition?: SpeechRecognitionCtor
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySR = any
+
+function makeSR(): AnySR | null {
+  if (typeof window === 'undefined') return null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  return SR ? new SR() : null
 }
 
-function isSpeechSupported(): boolean {
+function isVoiceSupported(): boolean {
   if (typeof window === 'undefined') return false
-  const hasSR = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hasSR = !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition
   if (!hasSR) return false
   const ua = navigator.userAgent
   const isIOS = /iPhone|iPad|iPod/.test(ua)
-  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua)
-  // On iOS, only Safari supports SpeechRecognition; Chrome/other browsers do not
-  if (isIOS) return isSafari
+  // On iOS only Safari has SpeechRecognition; Chrome/Firefox on iOS do not
+  if (isIOS) return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)
   return true
-}
-
-function getSR(): SpeechRecognitionCtor | undefined {
-  const w = window as WindowWithSpeech
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition
 }
 
 export default function CapturePage() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [recording, setRecording] = useState(false)
-  const [hasMic, setHasMic] = useState(false)
+  const [supported, setSupported] = useState(false)
+  const [iosUnsupported, setIosUnsupported] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
-  const isRecordingRef = useRef(false)
+  const recRef = useRef<AnySR>(null)
   const router = useRouter()
 
   useEffect(() => {
-    setHasMic(isSpeechSupported())
+    const ua = navigator.userAgent
+    const isIOS = /iPhone|iPad|iPod/.test(ua)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hasSR = !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition
+    if (isIOS && hasSR && !isVoiceSupported()) {
+      setIosUnsupported(true)
+    } else {
+      setSupported(isVoiceSupported())
+    }
   }, [])
 
-  const setIsRecording = useCallback((val: boolean) => {
-    isRecordingRef.current = val
-    setRecording(val)
-  }, [])
-
-  const spawnRecognition = useCallback((lang: string) => {
-    const SR = getSR()
-    if (!SR) return
-
-    const recognition = new SR()
-    recognition.lang = lang
-    recognition.interimResults = false
-    recognition.continuous = false
-
-    recognition.onresult = (e: SpeechRecognitionEvent) => {
-      const transcript = Array.from(e.results)
-        .map(r => r[0].transcript)
-        .join(' ')
-      setText(prev => (prev ? prev + ' ' + transcript : transcript))
-    }
-
-    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
-      if (e.error === 'language-not-supported' && lang === 'uk-UA') {
-        recognition.stop()
-        spawnRecognition(navigator.language)
-        return
-      }
-      setIsRecording(false)
-    }
-
-    recognition.onend = () => {
-      if (isRecordingRef.current) {
-        try { recognition.start() } catch { setIsRecording(false) }
-      } else {
-        setIsRecording(false)
-      }
-    }
-
-    recognitionRef.current = recognition
-    recognition.start()
-  }, [setIsRecording])
-
-  const toggleMic = useCallback(() => {
-    if (isRecordingRef.current) {
-      setIsRecording(false)
-      recognitionRef.current?.stop()
+  const handleMic = () => {
+    if (recording) {
+      recRef.current?.stop()
+      setRecording(false)
       return
     }
-    setIsRecording(true)
-    spawnRecognition('uk-UA')
-  }, [setIsRecording, spawnRecognition])
+
+    const recognition = makeSR()
+    if (!recognition) return
+
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.lang = 'uk-UA'
+    recognition.maxAlternatives = 1
+
+    recognition.onresult = (event: AnySR) => {
+      const transcript = event.results[0][0].transcript as string
+      setText(prev => (prev ? prev + ' ' + transcript : transcript))
+      setRecording(false)
+    }
+
+    recognition.onerror = () => setRecording(false)
+    recognition.onend = () => setRecording(false)
+
+    recRef.current = recognition
+    try {
+      recognition.start()
+      setRecording(true)
+    } catch {
+      recognition.stop()
+      setTimeout(() => {
+        try { recognition.start(); setRecording(true) } catch { setRecording(false) }
+      }, 200)
+    }
+  }
 
   const handleSubmit = async () => {
     const trimmed = text.trim()
     if (!trimmed) return
-    if (isRecordingRef.current) {
-      setIsRecording(false)
-      recognitionRef.current?.stop()
-    }
+    if (recording) { recRef.current?.stop(); setRecording(false) }
 
     setLoading(true)
     setError(null)
@@ -146,9 +132,7 @@ export default function CapturePage() {
     <div className="flex flex-col min-h-[calc(100dvh-80px)] py-10 gap-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">AI Day Planner</h1>
-        <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>
-          Скинь думки — я розберу
-        </p>
+        <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>Скинь думки — я розберу</p>
       </div>
 
       <textarea
@@ -156,26 +140,18 @@ export default function CapturePage() {
         onChange={e => setText(e.target.value)}
         placeholder="Що крутиться в голові? Пиши або говори..."
         className="flex-1 min-h-[40vh] w-full rounded-3xl p-5 resize-none focus:outline-none"
-        style={{
-          background: '#fff',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-          fontSize: '18px',
-          lineHeight: '1.6',
-          color: '#000',
-        }}
+        style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', fontSize: '18px', lineHeight: '1.6', color: '#000' }}
         disabled={loading}
       />
 
       {error && (
-        <p className="text-sm text-center font-medium" style={{ color: '#FF3B30' }}>
-          {error}
-        </p>
+        <p className="text-sm text-center font-medium" style={{ color: '#FF3B30' }}>{error}</p>
       )}
 
       <div className="flex flex-col items-center gap-4">
-        {hasMic && (
+        {supported && (
           <button
-            onClick={toggleMic}
+            onClick={handleMic}
             disabled={loading}
             aria-label={recording ? 'Зупинити запис' : 'Почати запис'}
             className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90"
@@ -187,6 +163,10 @@ export default function CapturePage() {
           >
             🎤
           </button>
+        )}
+
+        {iosUnsupported && (
+          <p className="text-sm" style={{ color: '#8E8E93' }}>🎤 Голос доступний лише в Safari</p>
         )}
 
         <button
@@ -203,9 +183,7 @@ export default function CapturePage() {
               </svg>
               Розбираю...
             </span>
-          ) : (
-            'Розібрати'
-          )}
+          ) : 'Розібрати'}
         </button>
       </div>
     </div>

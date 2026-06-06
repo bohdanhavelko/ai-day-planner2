@@ -9,6 +9,7 @@ const tabs = [
   { href: '/', label: 'Capture', icon: '✏️' },
   { href: '/inbox', label: 'Inbox', icon: '📥' },
   { href: '/today', label: 'Today', icon: '✅' },
+  { href: '/week', label: 'Тиждень', icon: '📅' },
 ]
 
 export default function BottomNav() {
