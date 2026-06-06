@@ -40,7 +40,9 @@ export async function parseTasks(text: string): Promise<ParsedTask[]> {
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Parse failed')
 
-  const parsed = JSON.parse(content.text)
+  let rawContent = content.text
+  rawContent = rawContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+  const parsed = JSON.parse(rawContent)
   if (!Array.isArray(parsed.tasks)) throw new Error('Parse failed')
 
   return parsed.tasks as ParsedTask[]
