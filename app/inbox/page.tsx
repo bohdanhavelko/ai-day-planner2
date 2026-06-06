@@ -14,17 +14,38 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'nice', label: 'NICE' },
 ]
 
+function formatScheduleLabel(dateStr: string): string {
+  const today = new Date().toISOString().split('T')[0]
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0]
+  if (dateStr === today) return '📅 Сьогодні'
+  if (dateStr === tomorrow) return '📅 Завтра'
+  const date = new Date(dateStr + 'T00:00:00')
+  return '📅 ' + date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+}
+
 export default function InboxPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [filter, setFilter] = useState<Filter>('all')
+  const [toast, setToast] = useState('')
 
   useEffect(() => {
     setTasks(getTasks().filter(t => t.status === 'inbox'))
   }, [])
 
-  const handleAddToToday = (id: string) => {
-    updateTask(id, { status: 'today' })
-    setTasks(prev => prev.filter(t => t.id !== id))
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
+
+  const handleSchedule = (id: string, targetDate: string) => {
+    const today = new Date().toISOString().split('T')[0]
+    if (targetDate === today) {
+      updateTask(id, { status: 'today' })
+      setTasks(prev => prev.filter(t => t.id !== id))
+    } else {
+      updateTask(id, { deadline: targetDate })
+      showToast(`Заплановано на ${formatScheduleLabel(targetDate)}`)
+    }
   }
 
   const handleDelete = (id: string) => {
@@ -65,11 +86,9 @@ export default function InboxPage() {
                   key={f.value}
                   onClick={() => setFilter(f.value)}
                   className="px-4 py-2 rounded-2xl text-sm font-semibold transition-all min-h-[36px]"
-                  style={
-                    active
-                      ? { background: '#007AFF', color: '#fff' }
-                      : { background: '#fff', color: '#3C3C43', border: '1px solid #E5E5EA' }
-                  }
+                  style={active
+                    ? { background: '#007AFF', color: '#fff' }
+                    : { background: '#fff', color: '#3C3C43', border: '1px solid #E5E5EA' }}
                 >
                   {f.label}
                 </button>
@@ -87,13 +106,21 @@ export default function InboxPage() {
                 <TaskCard
                   key={task.id}
                   task={task}
-                  onAddToToday={handleAddToToday}
+                  onSchedule={handleSchedule}
                   onDelete={handleDelete}
                 />
               ))
             )}
           </div>
         </>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 text-white text-sm px-4 py-2 rounded-full z-50 whitespace-nowrap"
+          style={{ background: '#1C1C1E', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}
+        >
+          {toast}
+        </div>
       )}
     </div>
   )
