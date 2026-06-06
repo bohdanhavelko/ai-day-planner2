@@ -13,8 +13,19 @@ type WindowWithSpeech = Window & {
   webkitSpeechRecognition?: SpeechRecognitionCtor
 }
 
+function isSpeechSupported(): boolean {
+  if (typeof window === 'undefined') return false
+  const hasSR = 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window
+  if (!hasSR) return false
+  const ua = navigator.userAgent
+  const isIOS = /iPhone|iPad|iPod/.test(ua)
+  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua)
+  // On iOS, only Safari supports SpeechRecognition; Chrome/other browsers do not
+  if (isIOS) return isSafari
+  return true
+}
+
 function getSR(): SpeechRecognitionCtor | undefined {
-  if (typeof window === 'undefined') return undefined
   const w = window as WindowWithSpeech
   return w.SpeechRecognition ?? w.webkitSpeechRecognition
 }
@@ -30,7 +41,7 @@ export default function CapturePage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (getSR()) setHasMic(true)
+    setHasMic(isSpeechSupported())
   }, [])
 
   const setIsRecording = useCallback((val: boolean) => {
@@ -108,9 +119,13 @@ export default function CapturePage() {
         throw new Error(data.error || 'Щось пішло не так')
       }
 
-      const { tasks } = await res.json()
+      const data = await res.json()
 
-      const fullTasks: Task[] = tasks.map(
+      if (!data.tasks || data.tasks.length === 0) {
+        throw new Error('Не вдалося розпізнати задачі. Опиши конкретніше що треба зробити.')
+      }
+
+      const fullTasks: Task[] = data.tasks.map(
         (t: Omit<Task, 'id' | 'status' | 'createdAt'>) => ({
           ...t,
           id: crypto.randomUUID(),
@@ -193,8 +208,6 @@ export default function CapturePage() {
           )}
         </button>
       </div>
-
-      <p className="text-center text-xs mt-2" style={{ color: '#C7C7CC' }}>v1.5</p>
     </div>
   )
 }

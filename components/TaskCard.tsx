@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Task } from '@/lib/types'
+import { Task, TaskPriority } from '@/lib/types'
 import { updateTask } from '@/lib/storage'
 
 interface Props {
@@ -10,10 +10,29 @@ interface Props {
   onDelete: (id: string) => void
 }
 
+function formatDeadline(deadline: string | null): string | null {
+  if (!deadline) return null
+  const date = new Date(deadline + 'T00:00:00')
+  const todayStr = new Date().toISOString().split('T')[0]
+  const tomorrowDate = new Date()
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+  const tomorrowStr = tomorrowDate.toISOString().split('T')[0]
+  if (deadline === todayStr) return 'Сьогодні'
+  if (deadline === tomorrowStr) return 'Завтра'
+  return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' })
+}
+
 export default function TaskCard({ task, onAddToToday, onDelete }: Props) {
-  const accentColor = task.priority === 'must' ? '#FF3B30' : '#8E8E93'
+  const [priority, setPriority] = useState<TaskPriority>(task.priority)
+  const accentColor = priority === 'must' ? '#FF3B30' : '#8E8E93'
   const [editingTime, setEditingTime] = useState(false)
   const [timeValue, setTimeValue] = useState(task.estimatedMinutes)
+
+  const togglePriority = () => {
+    const next: TaskPriority = priority === 'must' ? 'nice' : 'must'
+    setPriority(next)
+    updateTask(task.id, { priority: next })
+  }
 
   const commitTime = (val: number) => {
     const clamped = Math.min(480, Math.max(5, val))
@@ -32,16 +51,17 @@ export default function TaskCard({ task, onAddToToday, onDelete }: Props) {
       <div className="flex-1 p-4 flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-2">
           <p className="text-base font-semibold leading-snug flex-1">{task.title}</p>
-          <span
-            className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full"
+          <button
+            onClick={togglePriority}
+            className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full transition-all active:scale-95 flex items-center gap-1"
             style={
-              task.priority === 'must'
-                ? { background: '#FFF0EF', color: '#FF3B30' }
+              priority === 'must'
+                ? { background: '#FF3B30', color: '#fff' }
                 : { background: '#F2F2F7', color: '#8E8E93' }
             }
           >
-            {task.priority === 'must' ? 'MUST' : 'NICE'}
-          </span>
+            {priority === 'must' ? 'MUST' : 'NICE'} <span className="opacity-60">↕</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3 text-sm" style={{ color: '#8E8E93' }}>
@@ -75,7 +95,7 @@ export default function TaskCard({ task, onAddToToday, onDelete }: Props) {
               ⏱ <span className="font-medium underline decoration-dotted" style={{ color: '#007AFF' }}>{timeValue} хв</span>
             </button>
           )}
-          {task.deadline && <span>📅 {task.deadline}</span>}
+          {formatDeadline(task.deadline) && <span>📅 {formatDeadline(task.deadline)}</span>}
         </div>
 
         <div className="flex gap-2 pt-0.5">

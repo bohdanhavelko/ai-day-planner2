@@ -15,8 +15,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const tasks = await parseTasks(text)
-    return NextResponse.json({ tasks })
+    const today = new Date().toISOString().split('T')[0]
+    const messageWithDate = `Today is ${today}.\n\n${text}`
+    const tasks = await parseTasks(messageWithDate)
+    const validTasks = tasks.filter(t => t.title && t.title.trim().length >= 3)
+    if (validTasks.length === 0) {
+      return NextResponse.json({ tasks: [], message: 'Не вдалося знайти задачі' })
+    }
+    return NextResponse.json({ tasks: validTasks })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Parse failed'
     if (message === 'AI not configured') {

@@ -99,11 +99,14 @@ export default function TodayPage() {
     <div className="py-10 flex flex-col gap-5">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Today</h1>
-        <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>
-          {tasks.length > 0
-            ? `${active.length} залишилось · ${done.length} виконано`
-            : 'Список порожній'}
+        <p className="text-sm mt-0.5" style={{ color: '#8E8E93' }}>
+          {new Date().toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
         </p>
+        {tasks.length > 0 && (
+          <p className="text-xs mt-1" style={{ color: '#C7C7CC' }}>
+            {active.length} залишилось · {done.length} виконано
+          </p>
+        )}
       </div>
 
       {timeBanner && (
