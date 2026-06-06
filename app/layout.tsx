@@ -14,8 +14,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uk" className="h-full">
-      <body className="min-h-full bg-gray-50 text-gray-900 pb-20">
-        <main className="max-w-lg mx-auto px-4">{children}</main>
+      <body className="min-h-full pb-24" style={{ background: '#F2F2F7' }}>
+        <main className="max-w-lg mx-auto px-5">{children}</main>
         <BottomNav />
       </body>
     </html>

@@ -24,16 +24,21 @@ export default function InboxPage() {
   }
 
   return (
-    <div className="py-6 flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Inbox</h1>
+    <div className="py-10 flex flex-col gap-5">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
+        <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>
+          {tasks.length > 0 ? `${tasks.length} задач` : 'Все чисто'}
+        </p>
+      </div>
 
       {tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-center">
-          <p className="text-4xl">📥</p>
-          <p className="text-lg font-medium text-gray-700">Inbox чистий</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-5xl">📥</p>
+          <p className="text-xl font-semibold">Inbox чистий</p>
+          <p className="text-sm" style={{ color: '#8E8E93' }}>
             Йди на{' '}
-            <Link href="/" className="text-blue-600 font-semibold underline underline-offset-2">
+            <Link href="/" className="font-semibold" style={{ color: '#007AFF' }}>
               Capture
             </Link>{' '}
             і скинь думки

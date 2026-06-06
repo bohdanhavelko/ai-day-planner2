@@ -13,7 +13,15 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe shadow-[0_-1px_8px_rgba(0,0,0,0.06)]">
+    <nav
+      className="fixed bottom-0 left-0 right-0 pb-safe"
+      style={{
+        background: 'rgba(255,255,255,0.72)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        borderTop: '0.5px solid rgba(0,0,0,0.12)',
+      }}
+    >
       <div className="flex max-w-lg mx-auto">
         {tabs.map(tab => {
           const active = pathname === tab.href
@@ -21,12 +29,21 @@ export default function BottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex-1 flex flex-col items-center justify-center py-3 min-h-[56px] text-sm font-medium transition-all active:scale-95 ${
-                active ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'
-              }`}
+              className="flex-1 flex flex-col items-center justify-center py-2 min-h-[56px] transition-all active:opacity-60"
+              style={{ color: active ? '#007AFF' : '#8E8E93' }}
             >
-              <span className="text-xl leading-none mb-1">{tab.icon}</span>
-              <span className={active ? 'font-semibold' : ''}>{tab.label}</span>
+              <span
+                className="text-2xl leading-none mb-0.5 transition-transform"
+                style={{ transform: active ? 'scale(1.1)' : 'scale(1)' }}
+              >
+                {tab.icon}
+              </span>
+              <span
+                className="text-[10px] tracking-wide"
+                style={{ fontWeight: active ? 600 : 400 }}
+              >
+                {tab.label}
+              </span>
             </Link>
           )
         })}

@@ -6,6 +6,59 @@ import { getTasks, updateTask } from '@/lib/storage'
 import { Task } from '@/lib/types'
 import TaskCheckItem from '@/components/TaskCheckItem'
 
+const RING_R = 54
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_R
+
+function ProgressRing({ done, total }: { done: number; total: number }) {
+  const pct = total === 0 ? 0 : done / total
+  const offset = RING_CIRCUMFERENCE * (1 - pct)
+  const complete = total > 0 && done === total
+  const ringColor = complete ? '#34C759' : '#007AFF'
+
+  return (
+    <div className="flex flex-col items-center gap-3 py-6">
+      <div className="relative w-36 h-36 flex items-center justify-center">
+        <svg className="absolute inset-0 -rotate-90" width="144" height="144" viewBox="0 0 144 144">
+          <circle
+            cx="72"
+            cy="72"
+            r={RING_R}
+            fill="none"
+            stroke="#E5E5EA"
+            strokeWidth="10"
+          />
+          <circle
+            cx="72"
+            cy="72"
+            r={RING_R}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 0.5s ease, stroke 0.4s ease' }}
+          />
+        </svg>
+        <div className="flex flex-col items-center">
+          <span className="text-3xl font-bold" style={{ color: complete ? '#34C759' : '#000' }}>
+            {done}/{total}
+          </span>
+          <span className="text-xs font-medium" style={{ color: '#8E8E93' }}>
+            виконано
+          </span>
+        </div>
+      </div>
+
+      {complete && (
+        <p className="text-base font-semibold" style={{ color: '#34C759' }}>
+          🎉 День завершено!
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function TodayPage() {
   const [tasks, setTasks] = useState<Task[]>([])
 
@@ -28,35 +81,54 @@ export default function TodayPage() {
   const done = tasks.filter(t => t.status === 'done')
 
   return (
-    <div className="py-6 flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Today</h1>
+    <div className="py-10 flex flex-col gap-5">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Today</h1>
+        <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>
+          {tasks.length > 0
+            ? `${active.length} залишилось · ${done.length} виконано`
+            : 'Список порожній'}
+        </p>
+      </div>
 
       {tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-center">
-          <p className="text-4xl">✅</p>
-          <p className="text-lg font-medium text-gray-700">Немає задач на сьогодні</p>
-          <p className="text-gray-500 text-sm">
+          <p className="text-5xl">✅</p>
+          <p className="text-xl font-semibold">Немає задач на сьогодні</p>
+          <p className="text-sm" style={{ color: '#8E8E93' }}>
             Додай з{' '}
-            <Link href="/inbox" className="text-blue-600 font-semibold underline underline-offset-2">
+            <Link href="/inbox" className="font-semibold" style={{ color: '#007AFF' }}>
               Inbox
             </Link>
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {active.map(task => (
-            <TaskCheckItem key={task.id} task={task} onToggle={handleToggle} />
-          ))}
+        <>
+          <ProgressRing done={done.length} total={tasks.length} />
 
-          {done.length > 0 && (
-            <>
-              {active.length > 0 && <hr className="border-gray-200 my-1" />}
-              {done.map(task => (
-                <TaskCheckItem key={task.id} task={task} onToggle={handleToggle} />
-              ))}
-            </>
-          )}
-        </div>
+          <div className="flex flex-col gap-3">
+            {active.map(task => (
+              <TaskCheckItem key={task.id} task={task} onToggle={handleToggle} />
+            ))}
+
+            {done.length > 0 && (
+              <>
+                {active.length > 0 && (
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="flex-1 h-px" style={{ background: '#E5E5EA' }} />
+                    <span className="text-xs font-medium" style={{ color: '#C7C7CC' }}>
+                      виконано
+                    </span>
+                    <div className="flex-1 h-px" style={{ background: '#E5E5EA' }} />
+                  </div>
+                )}
+                {done.map(task => (
+                  <TaskCheckItem key={task.id} task={task} onToggle={handleToggle} />
+                ))}
+              </>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

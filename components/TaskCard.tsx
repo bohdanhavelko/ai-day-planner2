@@ -9,40 +9,52 @@ interface Props {
 }
 
 export default function TaskCard({ task, onAddToToday, onDelete }: Props) {
+  const accentColor = task.priority === 'must' ? '#FF3B30' : '#8E8E93'
+
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col gap-3 shadow-sm transition-shadow hover:shadow-md active:scale-[0.99]">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-base font-medium leading-snug flex-1">{task.title}</p>
-        <span
-          className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ${
-            task.priority === 'must'
-              ? 'bg-red-100 text-red-700'
-              : 'bg-yellow-100 text-yellow-700'
-          }`}
-        >
-          {task.priority === 'must' ? 'MUST' : 'NICE'}
-        </span>
-      </div>
+    <div
+      className="bg-white rounded-3xl flex overflow-hidden transition-all active:scale-[0.98]"
+      style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}
+    >
+      <div className="w-1 shrink-0" style={{ background: accentColor }} />
 
-      <div className="flex items-center gap-3 text-sm text-gray-500">
-        <span>⏱ {task.estimatedMinutes} хв</span>
-        {task.deadline && <span>📅 {task.deadline}</span>}
-      </div>
+      <div className="flex-1 p-4 flex flex-col gap-2.5">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-base font-semibold leading-snug flex-1">{task.title}</p>
+          <span
+            className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full"
+            style={
+              task.priority === 'must'
+                ? { background: '#FFF0EF', color: '#FF3B30' }
+                : { background: '#F2F2F7', color: '#8E8E93' }
+            }
+          >
+            {task.priority === 'must' ? 'MUST' : 'NICE'}
+          </span>
+        </div>
 
-      <div className="flex gap-2 pt-1">
-        <button
-          onClick={() => onAddToToday(task.id)}
-          className="flex-1 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:bg-blue-800 transition-colors min-h-[48px]"
-        >
-          На сьогодні
-        </button>
-        <button
-          onClick={() => onDelete(task.id)}
-          aria-label="Видалити"
-          className="w-12 h-12 rounded-xl bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600 active:bg-red-200 transition-colors flex items-center justify-center text-lg min-h-[48px]"
-        >
-          🗑️
-        </button>
+        <div className="flex items-center gap-3 text-sm" style={{ color: '#8E8E93' }}>
+          <span>⏱ {task.estimatedMinutes} хв</span>
+          {task.deadline && <span>📅 {task.deadline}</span>}
+        </div>
+
+        <div className="flex gap-2 pt-0.5">
+          <button
+            onClick={() => onAddToToday(task.id)}
+            className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold transition-opacity active:opacity-75 min-h-[48px]"
+            style={{ background: '#007AFF' }}
+          >
+            На сьогодні
+          </button>
+          <button
+            onClick={() => onDelete(task.id)}
+            aria-label="Видалити"
+            className="w-12 h-12 rounded-2xl text-lg flex items-center justify-center transition-all active:opacity-75 min-h-[48px]"
+            style={{ background: '#FFF0EF' }}
+          >
+            🗑️
+          </button>
+        </div>
       </div>
     </div>
   )

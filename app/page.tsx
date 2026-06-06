@@ -37,21 +37,16 @@ export default function CapturePage() {
     setRecording(false)
   }, [])
 
-  const toggleMic = useCallback(() => {
-    if (recording) {
-      stopRecording()
-      return
-    }
-
+  const startRecognition = useCallback((lang: string, baseText: string) => {
     const SR = getSR()
     if (!SR) return
 
     const recognition = new SR()
-    recognition.lang = 'uk-UA'
+    recognition.lang = lang
     recognition.interimResults = true
     recognition.continuous = true
 
-    let base = text
+    let base = baseText
     recognition.onresult = (e: SpeechRecognitionEvent) => {
       let interim = ''
       let final = ''
@@ -66,9 +61,9 @@ export default function CapturePage() {
 
     recognition.onend = () => setRecording(false)
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
-      if (e.error === 'language-not-supported') {
-        recognition.lang = navigator.language
-        recognition.start()
+      if (e.error === 'language-not-supported' && lang === 'uk-UA') {
+        recognition.stop()
+        startRecognition(navigator.language, base)
       } else {
         setRecording(false)
       }
@@ -77,7 +72,15 @@ export default function CapturePage() {
     recognitionRef.current = recognition
     recognition.start()
     setRecording(true)
-  }, [recording, text, stopRecording])
+  }, [])
+
+  const toggleMic = useCallback(() => {
+    if (recording) {
+      stopRecording()
+      return
+    }
+    startRecognition('uk-UA', text)
+  }, [recording, text, stopRecording, startRecognition])
 
   const handleSubmit = async () => {
     const trimmed = text.trim()
@@ -119,18 +122,34 @@ export default function CapturePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-64px)] py-8 gap-6">
-      <h1 className="text-2xl font-bold text-center">AI Day Planner</h1>
+    <div className="flex flex-col min-h-[calc(100dvh-80px)] py-10 gap-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">AI Day Planner</h1>
+        <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>
+          Скинь думки — я розберу
+        </p>
+      </div>
 
       <textarea
         value={text}
         onChange={e => setText(e.target.value)}
-        placeholder="Що крутиться в голині? Пиши або говори..."
-        className="flex-1 min-h-[40vh] w-full rounded-2xl border border-gray-300 p-4 text-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+        placeholder="Що крутиться в голові? Пиши або говори..."
+        className="flex-1 min-h-[40vh] w-full rounded-3xl p-5 text-lg resize-none focus:outline-none"
+        style={{
+          background: '#fff',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+          fontSize: '18px',
+          lineHeight: '1.6',
+          color: '#000',
+        }}
         disabled={loading}
       />
 
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      {error && (
+        <p className="text-sm text-center font-medium" style={{ color: '#FF3B30' }}>
+          {error}
+        </p>
+      )}
 
       <div className="flex flex-col items-center gap-4">
         {hasMic && (
@@ -138,11 +157,19 @@ export default function CapturePage() {
             onClick={toggleMic}
             disabled={loading}
             aria-label={recording ? 'Зупинити запис' : 'Почати запис'}
-            className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-md transition-all ${
+            className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90"
+            style={
               recording
-                ? 'bg-red-500 animate-pulse text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+                ? {
+                    background: '#FF3B30',
+                    boxShadow: '0 0 0 8px rgba(255,59,48,0.2)',
+                    animation: 'pulse 1.5s infinite',
+                  }
+                : {
+                    background: '#fff',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+                  }
+            }
           >
             🎤
           </button>
@@ -151,24 +178,14 @@ export default function CapturePage() {
         <button
           onClick={handleSubmit}
           disabled={loading || !text.trim()}
-          className="w-full py-4 rounded-2xl bg-blue-600 text-white text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 active:bg-blue-800 transition-colors min-h-[56px]"
+          className="w-full py-4 rounded-2xl text-white text-lg font-semibold transition-all active:opacity-75 min-h-[56px] disabled:opacity-40"
+          style={{ background: '#007AFF' }}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8z"
-                />
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
               Розбираю...
             </span>
@@ -178,7 +195,7 @@ export default function CapturePage() {
         </button>
       </div>
 
-      <p className="text-center text-xs text-gray-400 mt-2">v1.3</p>
+      <p className="text-center text-xs mt-2" style={{ color: '#C7C7CC' }}>v1.4</p>
     </div>
   )
 }

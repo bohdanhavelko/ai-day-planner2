@@ -13,19 +13,23 @@ export default function TaskCheckItem({ task, onToggle }: Props) {
   return (
     <button
       onClick={() => onToggle(task.id)}
-      className="w-full flex items-center gap-4 bg-white border border-gray-200 rounded-2xl px-4 py-4 min-h-[64px] shadow-sm text-left transition-colors active:bg-gray-50"
+      className="w-full flex items-center gap-4 bg-white rounded-3xl px-4 py-4 min-h-[68px] text-left transition-all active:scale-[0.98] active:opacity-80"
+      style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}
     >
       <span
-        className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-          done ? 'bg-blue-600 border-blue-600' : 'border-gray-400'
-        }`}
+        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all"
+        style={
+          done
+            ? { background: '#34C759', border: 'none' }
+            : { background: 'transparent', border: '2px solid #C7C7CC' }
+        }
       >
         {done && (
-          <svg className="w-3 h-3 text-white" viewBox="0 0 12 10" fill="none">
+          <svg className="w-4 h-4 text-white" viewBox="0 0 12 10" fill="none">
             <path
               d="M1 5l3.5 3.5L11 1"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -35,28 +39,26 @@ export default function TaskCheckItem({ task, onToggle }: Props) {
 
       <div className="flex-1 min-w-0">
         <p
-          className={`text-base font-medium truncate ${
-            done ? 'line-through text-gray-400' : 'text-gray-900'
-          }`}
+          className="text-base font-medium truncate transition-all"
+          style={{ color: done ? '#C7C7CC' : '#000', textDecoration: done ? 'line-through' : 'none' }}
         >
           {task.title}
         </p>
-        <p className={`text-sm mt-0.5 ${done ? 'text-gray-300' : 'text-gray-500'}`}>
+        <p className="text-sm mt-0.5" style={{ color: done ? '#E5E5EA' : '#8E8E93' }}>
           ⏱ {task.estimatedMinutes} хв
           {task.deadline && <span className="ml-3">📅 {task.deadline}</span>}
         </p>
       </div>
 
       <span
-        className={`shrink-0 text-xs font-semibold px-2 py-1 rounded-full ${
-          task.priority === 'must'
-            ? done
-              ? 'bg-gray-100 text-gray-400'
-              : 'bg-red-100 text-red-700'
-            : done
-            ? 'bg-gray-100 text-gray-400'
-            : 'bg-yellow-100 text-yellow-700'
-        }`}
+        className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full"
+        style={
+          done
+            ? { background: '#F2F2F7', color: '#C7C7CC' }
+            : task.priority === 'must'
+            ? { background: '#FFF0EF', color: '#FF3B30' }
+            : { background: '#F2F2F7', color: '#8E8E93' }
+        }
       >
         {task.priority === 'must' ? 'MUST' : 'NICE'}
       </span>
