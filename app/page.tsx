@@ -47,7 +47,7 @@ export default function CapturePage() {
     if (!SR) return
 
     const recognition = new SR()
-    recognition.lang = navigator.language || 'uk-UA'
+    recognition.lang = 'uk-UA'
     recognition.interimResults = true
     recognition.continuous = true
 
@@ -65,7 +65,14 @@ export default function CapturePage() {
     }
 
     recognition.onend = () => setRecording(false)
-    recognition.onerror = () => setRecording(false)
+    recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
+      if (e.error === 'language-not-supported') {
+        recognition.lang = navigator.language
+        recognition.start()
+      } else {
+        setRecording(false)
+      }
+    }
 
     recognitionRef.current = recognition
     recognition.start()
@@ -170,6 +177,8 @@ export default function CapturePage() {
           )}
         </button>
       </div>
+
+      <p className="text-center text-xs text-gray-400 mt-2">v1.3</p>
     </div>
   )
 }

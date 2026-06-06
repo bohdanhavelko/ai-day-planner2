@@ -32,11 +32,12 @@ export default function TodayPage() {
       <h1 className="text-2xl font-bold">Today</h1>
 
       {tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center text-gray-500">
-          <p className="text-lg">Немає задач на сьогодні.</p>
-          <p>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-center">
+          <p className="text-4xl">✅</p>
+          <p className="text-lg font-medium text-gray-700">Немає задач на сьогодні</p>
+          <p className="text-gray-500 text-sm">
             Додай з{' '}
-            <Link href="/inbox" className="text-blue-600 underline font-medium">
+            <Link href="/inbox" className="text-blue-600 font-semibold underline underline-offset-2">
               Inbox
             </Link>
           </p>

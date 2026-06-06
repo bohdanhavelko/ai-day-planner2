@@ -28,11 +28,12 @@ export default function InboxPage() {
       <h1 className="text-2xl font-bold">Inbox</h1>
 
       {tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center text-gray-500">
-          <p className="text-lg">Inbox чистий.</p>
-          <p>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-center">
+          <p className="text-4xl">📥</p>
+          <p className="text-lg font-medium text-gray-700">Inbox чистий</p>
+          <p className="text-gray-500 text-sm">
             Йди на{' '}
-            <Link href="/" className="text-blue-600 underline font-medium">
+            <Link href="/" className="text-blue-600 font-semibold underline underline-offset-2">
               Capture
             </Link>{' '}
             і скинь думки
