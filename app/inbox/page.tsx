@@ -46,7 +46,7 @@ export default function InboxPage() {
   function scheduleTask(taskId: string, targetDate: string) {
     const today = new Date().toISOString().split('T')[0]
     if (targetDate === today) {
-      updateTask(taskId, { status: 'today' })
+      updateTask(taskId, { status: 'today', deadline: null })
       setTasks(prev => prev.filter(t => t.id !== taskId))
     } else {
       updateTask(taskId, { deadline: targetDate })
