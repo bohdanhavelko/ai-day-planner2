@@ -26,66 +26,72 @@ export default function CapturePage() {
   const [hasMic, setHasMic] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const isRecordingRef = useRef(false)
   const router = useRouter()
 
   useEffect(() => {
     if (getSR()) setHasMic(true)
   }, [])
 
-  const stopRecording = useCallback(() => {
-    recognitionRef.current?.stop()
-    setRecording(false)
+  const setIsRecording = useCallback((val: boolean) => {
+    isRecordingRef.current = val
+    setRecording(val)
   }, [])
 
-  const startRecognition = useCallback((lang: string, baseText: string) => {
+  const spawnRecognition = useCallback((lang: string) => {
     const SR = getSR()
     if (!SR) return
 
     const recognition = new SR()
     recognition.lang = lang
-    recognition.interimResults = true
-    recognition.continuous = true
+    recognition.interimResults = false
+    recognition.continuous = false
 
-    let base = baseText
     recognition.onresult = (e: SpeechRecognitionEvent) => {
-      let interim = ''
-      let final = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript
-        if (e.results[i].isFinal) final += t
-        else interim += t
-      }
-      if (final) base += (base ? ' ' : '') + final
-      setText(base + (interim ? (base ? ' ' : '') + interim : ''))
+      const transcript = Array.from(e.results)
+        .map(r => r[0].transcript)
+        .join(' ')
+      setText(prev => (prev ? prev + ' ' + transcript : transcript))
     }
 
-    recognition.onend = () => setRecording(false)
     recognition.onerror = (e: SpeechRecognitionErrorEvent) => {
       if (e.error === 'language-not-supported' && lang === 'uk-UA') {
         recognition.stop()
-        startRecognition(navigator.language, base)
+        spawnRecognition(navigator.language)
+        return
+      }
+      setIsRecording(false)
+    }
+
+    recognition.onend = () => {
+      if (isRecordingRef.current) {
+        try { recognition.start() } catch { setIsRecording(false) }
       } else {
-        setRecording(false)
+        setIsRecording(false)
       }
     }
 
     recognitionRef.current = recognition
     recognition.start()
-    setRecording(true)
-  }, [])
+  }, [setIsRecording])
 
   const toggleMic = useCallback(() => {
-    if (recording) {
-      stopRecording()
+    if (isRecordingRef.current) {
+      setIsRecording(false)
+      recognitionRef.current?.stop()
       return
     }
-    startRecognition('uk-UA', text)
-  }, [recording, text, stopRecording, startRecognition])
+    setIsRecording(true)
+    spawnRecognition('uk-UA')
+  }, [setIsRecording, spawnRecognition])
 
   const handleSubmit = async () => {
     const trimmed = text.trim()
     if (!trimmed) return
-    if (recording) stopRecording()
+    if (isRecordingRef.current) {
+      setIsRecording(false)
+      recognitionRef.current?.stop()
+    }
 
     setLoading(true)
     setError(null)
@@ -134,7 +140,7 @@ export default function CapturePage() {
         value={text}
         onChange={e => setText(e.target.value)}
         placeholder="Що крутиться в голові? Пиши або говори..."
-        className="flex-1 min-h-[40vh] w-full rounded-3xl p-5 text-lg resize-none focus:outline-none"
+        className="flex-1 min-h-[40vh] w-full rounded-3xl p-5 resize-none focus:outline-none"
         style={{
           background: '#fff',
           boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
@@ -160,15 +166,8 @@ export default function CapturePage() {
             className="w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all active:scale-90"
             style={
               recording
-                ? {
-                    background: '#FF3B30',
-                    boxShadow: '0 0 0 8px rgba(255,59,48,0.2)',
-                    animation: 'pulse 1.5s infinite',
-                  }
-                : {
-                    background: '#fff',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-                  }
+                ? { background: '#FF3B30', boxShadow: '0 0 0 8px rgba(255,59,48,0.2)', animation: 'pulse 1.5s infinite' }
+                : { background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)' }
             }
           >
             🎤
@@ -195,7 +194,7 @@ export default function CapturePage() {
         </button>
       </div>
 
-      <p className="text-center text-xs mt-2" style={{ color: '#C7C7CC' }}>v1.4</p>
+      <p className="text-center text-xs mt-2" style={{ color: '#C7C7CC' }}>v1.5</p>
     </div>
   )
 }

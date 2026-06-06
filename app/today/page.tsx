@@ -66,6 +66,11 @@ export default function TodayPage() {
     setTasks(getTasks().filter(t => t.status === 'today' || t.status === 'done'))
   }, [])
 
+  const handleMoveAllToInbox = () => {
+    tasks.filter(t => t.status === 'today').forEach(t => updateTask(t.id, { status: 'inbox' }))
+    setTasks(prev => prev.filter(t => t.status === 'done'))
+  }
+
   const handleToggle = (id: string) => {
     setTasks(prev =>
       prev.map(t => {
@@ -80,6 +85,16 @@ export default function TodayPage() {
   const active = tasks.filter(t => t.status === 'today')
   const done = tasks.filter(t => t.status === 'done')
 
+  const pendingMinutes = active.reduce((sum, t) => sum + t.estimatedMinutes, 0)
+  const totalHours = (pendingMinutes / 60).toFixed(1).replace('.0', '')
+
+  const timeBanner =
+    pendingMinutes > 480
+      ? { bg: '#FFF5F5', border: '#FFCDD2', text: '#D32F2F', icon: '⚠️', label: `Заплановано ${totalHours} год — більше ніж є в дні` }
+      : pendingMinutes >= 360
+      ? { bg: '#FFFDE7', border: '#FFE082', text: '#F57F17', icon: '⚠️', label: `Заплановано ${totalHours} год — майже повний день` }
+      : null
+
   return (
     <div className="py-10 flex flex-col gap-5">
       <div>
@@ -90,6 +105,15 @@ export default function TodayPage() {
             : 'Список порожній'}
         </p>
       </div>
+
+      {timeBanner && (
+        <div
+          className="rounded-2xl p-3 text-sm font-medium"
+          style={{ background: timeBanner.bg, border: `1px solid ${timeBanner.border}`, color: timeBanner.text }}
+        >
+          {timeBanner.icon} {timeBanner.label}
+        </div>
+      )}
 
       {tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-center">
@@ -128,6 +152,16 @@ export default function TodayPage() {
               </>
             )}
           </div>
+
+          {active.length > 0 && (
+            <button
+              onClick={handleMoveAllToInbox}
+              className="w-full py-3 rounded-2xl text-sm font-semibold transition-all active:opacity-70 min-h-[48px]"
+              style={{ background: '#F2F2F7', color: '#8E8E93' }}
+            >
+              Перенести невиконані в Inbox →
+            </button>
+          )}
         </>
       )}
     </div>
