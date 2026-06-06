@@ -48,6 +48,11 @@ export default function TodayPage() {
   const [planError, setPlanError] = useState('')
 
   useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]
+    // Auto-promote inbox tasks due today
+    getTasks()
+      .filter(t => t.status === 'inbox' && t.deadline === today)
+      .forEach(t => updateTask(t.id, { status: 'today' }))
     setTasks(getTasks().filter(t => t.status === 'today' || t.status === 'done'))
   }, [])
 

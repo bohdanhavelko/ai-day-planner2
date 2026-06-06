@@ -66,7 +66,19 @@ export default function InboxPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
-  const visible = filter === 'all' ? tasks : tasks.filter(t => t.priority === filter)
+
+  const allVisible = filter === 'all' ? tasks : tasks.filter(t => t.priority === filter)
+  const unscheduled = allVisible.filter(t => !t.deadline || t.deadline <= today)
+  const scheduled = allVisible.filter(t => t.deadline && t.deadline > today)
+
+  function formatShortDate(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })
+  }
+
+  function rescheduleTask(taskId: string) {
+    updateTask(taskId, { deadline: null })
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, deadline: null } : t))
+  }
 
   return (
     <div className="py-10 flex flex-col gap-5">
@@ -109,13 +121,14 @@ export default function InboxPage() {
             })}
           </div>
 
+          {/* Unscheduled tasks */}
           <div className="flex flex-col gap-3">
-            {visible.length === 0 ? (
+            {unscheduled.length === 0 && scheduled.length === 0 ? (
               <p className="text-center py-10 text-sm" style={{ color: '#8E8E93' }}>
                 Немає задач з фільтром «{FILTERS.find(f => f.value === filter)?.label}»
               </p>
             ) : (
-              visible.map(task => {
+              unscheduled.map(task => {
                 const priority = priorities[task.id] ?? task.priority
                 const accentColor = priority === 'must' ? '#FF3B30' : '#8E8E93'
                 const scheduleDate = scheduleDates[task.id] || today
@@ -129,7 +142,6 @@ export default function InboxPage() {
                     <div className="w-1 shrink-0" style={{ background: accentColor }} />
                     <div className="flex-1 p-4 flex flex-col gap-2">
 
-                      {/* Title + priority toggle */}
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-base font-semibold leading-snug flex-1">{task.title}</p>
                         <button
@@ -143,15 +155,11 @@ export default function InboxPage() {
                         </button>
                       </div>
 
-                      {/* Time + deadline */}
                       <div className="flex items-center gap-3 text-sm" style={{ color: '#8E8E93' }}>
                         <span>⏱ {task.estimatedMinutes} хв</span>
-                        {task.deadline && <span>📅 {task.deadline}</span>}
                       </div>
 
-                      {/* Scheduling row */}
                       <div className="flex gap-2 mt-1">
-                        {/* Date picker button */}
                         <div className="relative flex-1">
                           <button
                             onClick={() => dateInputRefs.current[task.id]?.showPicker()}
@@ -172,7 +180,6 @@ export default function InboxPage() {
                           />
                         </div>
 
-                        {/* Schedule confirm button */}
                         <button
                           onClick={() => scheduleTask(task.id, scheduleDate)}
                           className="flex-1 text-sm font-semibold text-white px-3 py-2 rounded-xl transition-opacity active:opacity-75"
@@ -181,7 +188,6 @@ export default function InboxPage() {
                           Запланувати →
                         </button>
 
-                        {/* Delete button */}
                         <button
                           onClick={() => handleDelete(task.id)}
                           aria-label="Видалити"
@@ -198,6 +204,39 @@ export default function InboxPage() {
               })
             )}
           </div>
+
+          {/* Scheduled tasks */}
+          {scheduled.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wider px-1" style={{ color: '#8E8E93' }}>
+                Заплановано 📅
+              </p>
+              {scheduled.map(task => (
+                <div
+                  key={task.id}
+                  className="bg-white rounded-3xl flex overflow-hidden"
+                  style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)', opacity: 0.75 }}
+                >
+                  <div className="w-1 shrink-0" style={{ background: '#C7C7CC' }} />
+                  <div className="flex-1 px-4 py-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: '#3C3C43' }}>{task.title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: '#8E8E93' }}>
+                        📅 {formatShortDate(task.deadline!)} · ⏱ {task.estimatedMinutes} хв
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => rescheduleTask(task.id)}
+                      className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-xl transition-opacity active:opacity-60"
+                      style={{ background: '#F2F2F7', color: '#8E8E93' }}
+                    >
+                      Перенести
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
