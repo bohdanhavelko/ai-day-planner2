@@ -27,59 +27,58 @@ export default function CapturePage() {
       return
     }
 
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) {
-      alert('Голосовий ввід не підтримується. Використовуй Safari.')
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Голосовий ввід доступний лише в Safari на iPhone')
       return
     }
 
-    const recognition = new SR()
+    const recognition = new SpeechRecognition()
     recognition.lang = 'uk-UA'
     recognition.continuous = false
-    recognition.interimResults = false
+    recognition.interimResults = true
     recognitionRef.current = recognition
 
-    const gotResultRef = { current: false }
-
     recognition.onstart = () => {
-      gotResultRef.current = false
       setIsListening(true)
+      ;(recognition as any)._lastTranscript = ''
     }
 
     recognition.onresult = (e) => {
-      gotResultRef.current = true
-      // Safari sometimes returns multiple results — take the last final one
-      let transcript = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      let finalTranscript = ''
+      let interim = ''
+      for (let i = 0; i < e.results.length; i++) {
         if (e.results[i].isFinal) {
-          transcript += e.results[i][0].transcript
+          finalTranscript += e.results[i][0].transcript
+        } else {
+          interim += e.results[i][0].transcript
         }
       }
-      console.log('transcript:', transcript)
-      if (transcript.trim()) {
-        // Use functional update to avoid stale closure
-        setText(prev => prev ? prev + ' ' + transcript.trim() : transcript.trim())
+      const combined = finalTranscript || interim
+      if (combined.trim()) {
+        ;(recognition as any)._lastTranscript = combined
       }
     }
 
     recognition.onend = () => {
-      if (gotResultRef.current) {
-        gotResultRef.current = false
-        try { recognition.start() } catch { setIsListening(false) }
-      } else {
-        setIsListening(false)
+      setIsListening(false)
+      const captured = (recognitionRef.current as any)?._lastTranscript
+      if (captured?.trim()) {
+        setText(prev => prev ? prev + ' ' + captured.trim() : captured.trim())
       }
     }
 
     recognition.onerror = (e) => {
-      if (e.error === 'no-speech') {
-        try { recognition.start() } catch { setIsListening(false) }
-        return
-      }
+      console.error('Speech error:', e.error)
       setIsListening(false)
     }
 
-    recognition.start()
+    try {
+      recognition.start()
+    } catch (err) {
+      console.error('Start failed:', err)
+      setIsListening(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -158,6 +157,11 @@ export default function CapturePage() {
         >
           <span className="text-white text-2xl">{isListening ? '⏹' : '🎤'}</span>
         </button>
+        {isListening && (
+          <p className="text-xs text-center" style={{ color: '#8E8E93' }}>
+            Говоріть... текст з'явиться після паузи
+          </p>
+        )}
 
         <button
           onClick={handleSubmit}
