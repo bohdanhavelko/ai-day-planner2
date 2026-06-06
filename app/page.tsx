@@ -47,7 +47,7 @@ export default function CapturePage() {
     if (!SR) return
 
     const recognition = new SR()
-    recognition.lang = ''
+    recognition.lang = navigator.language || 'uk-UA'
     recognition.interimResults = true
     recognition.continuous = true
 
