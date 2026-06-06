@@ -127,7 +127,7 @@ export default function CapturePage() {
   return (
     <div className="flex flex-col min-h-[calc(100dvh-80px)] py-10 gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">AI Day Planner</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Airo</h1>
         <p className="text-sm mt-1" style={{ color: '#8E8E93' }}>Скинь думки — я розберу</p>
       </div>
 

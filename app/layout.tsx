@@ -3,8 +3,8 @@ import './globals.css'
 import BottomNav from '@/components/BottomNav'
 
 export const metadata: Metadata = {
-  title: 'AI Day Planner',
-  description: 'Todoist that plans itself.',
+  title: 'Airo',
+  description: 'Plan your day — effortlessly',
 }
 
 export default function RootLayout({
